@@ -26,17 +26,26 @@ export function useFFT(
                 rms += buf[i] * buf[i];
             }
             rms = Math.sqrt(rms / SIZE);
-            
-            // Noise gate
-            if (rms < 0.01) return -1; 
+
+            // Noise gate, cancels the background noise
+            if (rms < 0.01) return -1;
+
+            //hann window to reduce the edges
+            const window = new Float32Array(SIZE)
+
+            for (let i = 0; i < SIZE; i++) {
+                const hann = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (SIZE - 1)))
+                window[i] = buf[i] * hann
+            }
 
             let MAX_SAMPLES = Math.floor(SIZE / 2);
             let correlations = new Float32Array(MAX_SAMPLES);
-            
+
             for (let offset = 0; offset < MAX_SAMPLES; offset++) {
                 let sum = 0;
                 for (let i = 0; i < MAX_SAMPLES; i++) {
-                    sum += buf[i] * buf[i + offset];
+                    // sum += buf[i] * buf[i + offset]
+                    sum += window[i] * window[i + offset];
                 }
                 correlations[offset] = sum;
             }
@@ -52,20 +61,25 @@ export function useFFT(
             // Find absolute maximum
             let maxval = -1;
             let maxpos = -1;
+
+
             for (let i = d; i < MAX_SAMPLES; i++) {
                 if (correlations[i] > maxval) {
                     maxval = correlations[i];
                     maxpos = i;
                 }
             }
+            //confidence scoring
+            const confidence = maxval / correlations[0]
+            if (confidence < 0.2) return -1
 
             let T0 = maxpos;
 
             // Prevent octave errors by checking for earlier peaks
             for (let i = d; i < maxpos; i++) {
-                if (correlations[i] > 0.9 * maxval && 
-                    correlations[i] > correlations[i-1] && 
-                    correlations[i] > correlations[i+1]) {
+                if (correlations[i] > 0.9 * maxval &&
+                    correlations[i] > correlations[i - 1] &&
+                    correlations[i] > correlations[i + 1]) {
                     T0 = i;
                     break;
                 }
@@ -76,7 +90,7 @@ export function useFFT(
                 let x1 = correlations[T0 - 1];
                 let x2 = correlations[T0];
                 let x3 = correlations[T0 + 1];
-                
+
                 let a = (x1 + x3) - 2 * x2;
                 let b = (x3 - x1) / 2;
                 if (a !== 0) T0 = T0 - b / (2 * a);
@@ -93,14 +107,14 @@ export function useFFT(
             if (freq !== -1) {
                 // If it's a realistic guitar frequency
                 if (freq > 60 && freq < 1000) {
-                    const smoothed = previousFrequency === 0 
-                        ? freq 
-                        : previousFrequency * 0.8 + freq * 0.2;
+                    const smoothed = previousFrequency === 0
+                        ? freq
+                        : previousFrequency * 0.75 + freq * 0.25;
                     previousFrequency = smoothed;
                     setDetectedFrequency(Number(smoothed.toFixed(2)));
                 }
             } else {
-                previousFrequency = 0;
+                previousFrequency = previousFrequency * 0.95;
             }
 
             animationFrameId = requestAnimationFrame(update);
