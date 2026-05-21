@@ -3,9 +3,9 @@ import { useEffect, useRef, useState } from "react";
 export function useMicrophone() {
     const [isListening, setIsListening] = useState(false);
     const [audioLevel, setAudioLevel] = useState(0);
+    const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
 
     const audioCtxRef = useRef<AudioContext | null>(null);
-    const analyserRef = useRef<AnalyserNode | null>(null);
 
     useEffect(() => {
         async function init() {
@@ -15,20 +15,19 @@ export function useMicrophone() {
                 const audioCtx = new AudioContext();
 
                 const source = audioCtx.createMediaStreamSource(stream);
-                const analyser = audioCtx.createAnalyser();
+                const analyserNode = audioCtx.createAnalyser();
 
-                analyser.fftSize = 2048;
-                source.connect(analyser)
+                analyserNode.fftSize = 2048;
+                source.connect(analyserNode)
 
-                analyserRef.current = analyser;
                 audioCtxRef.current = audioCtx;
-
+                setAnalyser(analyserNode);
                 setIsListening(true);
 
-                const dataArray = new Uint8Array(analyser.frequencyBinCount)
+                const dataArray = new Uint8Array(analyserNode.frequencyBinCount)
 
                 function update() {
-                    analyser.getByteTimeDomainData(dataArray)
+                    analyserNode.getByteTimeDomainData(dataArray)
 
                     let sum = 0;
                     for (let i = 0; i < dataArray.length; i++) {
@@ -54,6 +53,6 @@ export function useMicrophone() {
     return {
         isListening,
         audioLevel,
-        analyser: analyserRef.current
+        analyser
     }
 }

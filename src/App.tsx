@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMicrophone } from "./hooks/useMicrophone";
+import { useFFT } from "./hooks/useFFT";
 
 const STRINGS = [
   { note: "E", freq: 82.41 },
@@ -12,11 +13,22 @@ const STRINGS = [
 
 export default function App() {
   const [selected, setSelected] = useState(0);
-  const { isListening, audioLevel } = useMicrophone();
+  const { isListening, audioLevel, analyser } = useMicrophone();
 
-  // MOCK DATA 
-  const detectedFrequency = 109.8;
-  const cents = -4;
+  const targetFrequency = STRINGS[selected].freq
+  const detectedFrequency = useFFT(analyser, targetFrequency)
+
+  const cents = detectedFrequency > 0 ?
+    Math.floor(1200 * Math.log2(detectedFrequency / targetFrequency)) : 0
+
+
+  const isInTune = Math.abs(cents) <= 5;
+
+  const tunerColor = isInTune ? "text-green-400" :
+    cents < 0 ? "text-red-400" : "text-orange-400";
+
+  const tunerLabel = isInTune ? "IN TUNE" :
+    cents < 0 ? "TOO LOW" : "TOO HIGH";
 
   return (
     <div className="min-h-screen bg-[#0c0c0e] text-white flex flex-col items-center px-6 py-10">
@@ -107,13 +119,13 @@ export default function App() {
           </p>
 
           <h3 className="text-4xl font-bold">
-            {detectedFrequency} Hz
+            {detectedFrequency > 0 ? `${detectedFrequency} Hz` : "--"}
           </h3>
 
           <p
             className={`
               mt-4 text-2xl font-semibold
-              ${cents < 0 ? "text-red-400" : "text-green-400"}
+              ${tunerColor}
             `}
           >
             {cents > 0 ? "+" : ""}

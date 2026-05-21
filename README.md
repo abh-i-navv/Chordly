@@ -1,73 +1,43 @@
-# React + TypeScript + Vite
+# 🎸 Chordly - Web Guitar Tuner
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Chordly is a highly accurate, real-time, browser-based guitar tuner built with React and the Web Audio API.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Real-Time Pitch Detection:** Uses a mathematically robust True Autocorrelation algorithm (YIN-like) to track the exact fundamental frequency of your guitar strings.
+- **Sub-Cent Accuracy:** Employs parabolic interpolation to detect pitches that fall between discrete sample bins.
+- **Noise Gate:** Automatically ignores background hum and room noise with a built-in RMS threshold, keeping the tuner UI rock-steady.
+- **Octave & Harmonic Rejection:** Intelligently ignores overtones and harmonics that typically trick simple FFT-based tuners.
+- **Responsive UI:** Built with Tailwind CSS for a smooth, premium hardware-like feel.
 
-## React Compiler
+## The Engineering Story
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Building a web-based tuner is a complex Digital Signal Processing (DSP) challenge. Our initial implementation used a Fast Fourier Transform (FFT) approach, which suffered from poor low-frequency resolution (bad for the Low E string) and constantly locked onto incorrect harmonics or background noise.
 
-## Expanding the ESLint configuration
+To solve this, we completely ripped out the FFT logic and moved to a **Time-Domain Autocorrelation** algorithm. This maps the raw waveform of your guitar over time and measures its periodicity to find the true pitch, ignoring noise entirely.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Getting Started
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+To run Chordly locally:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+2. **Run the development server:**
+   ```bash
+   npm run dev
+   ```
+3. **Open in browser:** Navigate to `http://localhost:5173`
+4. **Allow Microphone Access:** When prompted, allow the browser to use your microphone. Pluck a string and get tuning!
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Tech Stack
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- **Framework:** React 19 + Vite
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS v4
+- **Audio Processing:** Native Web Audio API (`AudioContext`, `AnalyserNode`)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## License
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+MIT
