@@ -13,7 +13,7 @@ const STRINGS = [
 
 export default function App() {
   const [selected, setSelected] = useState(0);
-  const { isListening, audioLevel, analyser } = useMicrophone();
+  const { isListening, audioLevel, analyser, resume } = useMicrophone();
 
   const targetFrequency = STRINGS[selected].freq
   const detectedFrequency = useFFT(analyser, targetFrequency)
@@ -50,7 +50,10 @@ export default function App() {
         {STRINGS.map((string, index) => (
           <button
             key={index}
-            onClick={() => setSelected(index)}
+            onClick={() => {
+              setSelected(index);
+              resume();
+            }}
             className={`
               w-14 h-14 rounded-full text-xl font-bold transition-all duration-200
               ${selected === index
