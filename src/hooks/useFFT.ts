@@ -59,7 +59,7 @@ export function useFFT(
             }
 
             // 3. Absolute thresholding
-            const THRESHOLD = 0.1;
+            const THRESHOLD = 0.07;
             let tauEstimate = -1;
 
             for (let tau = MIN_PERIOD; tau < MAX_PERIOD; tau++) {
@@ -73,16 +73,7 @@ export function useFFT(
             }
 
             if (tauEstimate === -1) {
-                let minVal = Infinity;
-                for (let tau = MIN_PERIOD; tau < MAX_PERIOD; tau++) {
-                    if (normalized[tau] < minVal) {
-                        minVal = normalized[tau];
-                        tauEstimate = tau;
-                    }
-                }
-                if (minVal > 0.2) {
-                    return -1;
-                }
+                return -1
             }
 
             // 4. Parabolic interpolation
@@ -106,10 +97,16 @@ export function useFFT(
         function update() {
             analyser!.getFloatTimeDomainData(dataArray);
 
+            const min = targetFrequency * 0.8
+            const max = targetFrequency * 1.2
             const freq = yin(dataArray, sampleRate);
 
+            // if (freq < min || freq > max) {
+            //     return -1
+            // }
+
             if (freq !== -1) {
-                // If it's a realistic guitar frequency
+                // realistic guitar frequency
                 if (freq > 60 && freq < 1000) {
                     const smoothed = previousFrequency === 0
                         ? freq
