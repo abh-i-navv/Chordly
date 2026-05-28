@@ -18,94 +18,95 @@ export function useFFT(
         let previousFrequency = 0;
         let animationFrameId: number;
 
-        function autoCorrelate(buf: Float32Array, sampleRate: number) {
-            let SIZE = buf.length;
-            let rms = 0;
+        function yin(buf: Float32Array, sampleRate: number) {
+            const SIZE = buf.length;
+            const halfBufferSize = Math.floor(SIZE / 2);
 
+            let rms = 0;
             for (let i = 0; i < SIZE; i++) {
                 rms += buf[i] * buf[i];
             }
             rms = Math.sqrt(rms / SIZE);
 
-            // Noise gate, cancels the background noise
+            // Noise gate
             if (rms < 0.01) return -1;
 
-            //hann window to reduce the edges
-            const window = new Float32Array(SIZE)
+            // Pitch constraints for guitar
+            const MIN_FREQ = 60;
+            const MAX_FREQ = 1000;
 
-            for (let i = 0; i < SIZE; i++) {
-                const hann = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (SIZE - 1)))
-                window[i] = buf[i] * hann
-            }
+            const MIN_PERIOD = Math.floor(sampleRate / MAX_FREQ);
+            const MAX_PERIOD = Math.floor(sampleRate / MIN_FREQ);
 
-            let MAX_SAMPLES = Math.floor(SIZE / 2);
-            let correlations = new Float32Array(MAX_SAMPLES);
-
-            for (let offset = 0; offset < MAX_SAMPLES; offset++) {
+            // 1. Difference function
+            const difference = new Float32Array(MAX_PERIOD);
+            for (let tau = 0; tau < MAX_PERIOD; tau++) {
                 let sum = 0;
-                for (let i = 0; i < MAX_SAMPLES; i++) {
-                    // sum += buf[i] * buf[i + offset]
-                    sum += window[i] * window[i + offset];
+                for (let i = 0; i < halfBufferSize; i++) {
+                    const delta = buf[i] - buf[i + tau];
+                    sum += delta * delta;
                 }
-                correlations[offset] = sum;
+                difference[tau] = sum;
             }
 
-            // Find first zero crossing
-            let d = 0;
-            while (d < MAX_SAMPLES && correlations[d] > 0) {
-                d++;
+            // 2. Cumulative mean normalized difference function
+            const normalized = new Float32Array(MAX_PERIOD);
+            normalized[0] = 1;
+            let runningSum = 0;
+            for (let tau = 1; tau < MAX_PERIOD; tau++) {
+                runningSum += difference[tau];
+                normalized[tau] = runningSum === 0 ? 1 : (difference[tau] * tau) / runningSum;
             }
 
-            if (d === MAX_SAMPLES) return -1;
+            // 3. Absolute thresholding
+            const THRESHOLD = 0.07;
+            let tauEstimate = -1;
 
-            // Find absolute maximum
-            let maxval = -1;
-            let maxpos = -1;
-
-
-            for (let i = d; i < MAX_SAMPLES; i++) {
-                if (correlations[i] > maxval) {
-                    maxval = correlations[i];
-                    maxpos = i;
-                }
-            }
-            //confidence scoring
-            const confidence = maxval / correlations[0]
-            if (confidence < 0.2) return -1
-
-            let T0 = maxpos;
-
-            // Prevent octave errors by checking for earlier peaks
-            for (let i = d; i < maxpos; i++) {
-                if (correlations[i] > 0.9 * maxval &&
-                    correlations[i] > correlations[i - 1] &&
-                    correlations[i] > correlations[i + 1]) {
-                    T0 = i;
+            for (let tau = MIN_PERIOD; tau < MAX_PERIOD; tau++) {
+                if (normalized[tau] < THRESHOLD) {
+                    while (tau + 1 < MAX_PERIOD && normalized[tau + 1] < normalized[tau]) {
+                        tau++;
+                    }
+                    tauEstimate = tau;
                     break;
                 }
             }
 
-            // Parabolic interpolation
-            if (T0 > 0 && T0 < MAX_SAMPLES - 1) {
-                let x1 = correlations[T0 - 1];
-                let x2 = correlations[T0];
-                let x3 = correlations[T0 + 1];
-
-                let a = (x1 + x3) - 2 * x2;
-                let b = (x3 - x1) / 2;
-                if (a !== 0) T0 = T0 - b / (2 * a);
+            if (tauEstimate === -1) {
+                return -1
             }
 
-            return sampleRate / T0;
+            // 4. Parabolic interpolation
+            let betterTau = tauEstimate;
+            if (tauEstimate > 0 && tauEstimate < MAX_PERIOD - 1) {
+                const x0 = normalized[tauEstimate - 1];
+                const x1 = normalized[tauEstimate];
+                const x2 = normalized[tauEstimate + 1];
+
+                const a = (x0 + x2 - 2 * x1);
+                const b = (x2 - x0) / 2;
+
+                if (a !== 0) {
+                    betterTau = tauEstimate - b / (2 * a);
+                }
+            }
+
+            return sampleRate / betterTau;
         }
 
         function update() {
             analyser!.getFloatTimeDomainData(dataArray);
 
-            const freq = autoCorrelate(dataArray, sampleRate);
+            const min = targetFrequency * 0.8
+            const max = targetFrequency * 1.2
+            const freq = yin(dataArray, sampleRate);
+
+            // if (freq < min || freq > max) {
+            //     return -1
+            // }
 
             if (freq !== -1) {
-                // If it's a realistic guitar frequency
+                // realistic guitar frequency
                 if (freq > 60 && freq < 1000) {
                     const smoothed = previousFrequency === 0
                         ? freq
