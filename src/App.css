@@ -1,63 +1,54 @@
-/* Component-specific animations & utilities */
+/* App-specific custom style declarations */
 
-/* Logo gradient animation */
-@keyframes shimmer {
-  0% {
-    background-position: -200% center;
-  }
-  100% {
-    background-position: 200% center;
-  }
+/* Smooth analog needle transitions */
+.tuner-needle {
+  transform-origin: 50% 100%;
+  transition: transform 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.logo-shimmer {
-  background: linear-gradient(
-    90deg,
-    #10b981 0%,
-    #34d399 25%,
-    #6ee7b7 50%,
-    #34d399 75%,
-    #10b981 100%
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: shimmer 6s linear infinite;
-}
-
-/* Subtle float animation for the main card */
-@keyframes float {
+/* Pulsing aura for in-tune notes */
+@keyframes tune-glow {
   0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-4px);
-  }
-}
-
-.card-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-/* In-tune celebration pulse on the card border */
-@keyframes borderPulse {
-  0%, 100% {
-    border-color: rgba(16, 185, 129, 0.15);
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.02) inset,
-      0 20px 50px -12px rgba(0, 0, 0, 0.5),
-      0 0 60px -20px rgba(16, 185, 129, 0.1);
-  }
-  50% {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
     border-color: rgba(16, 185, 129, 0.3);
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.02) inset,
-      0 20px 50px -12px rgba(0, 0, 0, 0.5),
-      0 0 80px -10px rgba(16, 185, 129, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(16, 185, 129, 0.4);
+    border-color: rgba(16, 185, 129, 0.6);
   }
 }
 
-.card-in-tune {
-  animation: borderPulse 2.5s ease-in-out infinite;
+.glow-active-tune {
+  animation: tune-glow 2s infinite ease-in-out;
+}
+
+/* Subtle background decorative grids */
+.bg-grid-pattern {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+}
+
+/* Radial ambient lighting in background */
+.radial-ambient {
+  background: radial-gradient(circle at 50% -20%, rgba(16, 185, 129, 0.08) 0%, transparent 60%);
+}
+
+.radial-ambient-active {
+  background: radial-gradient(circle at 50% -20%, rgba(16, 185, 129, 0.15) 0%, transparent 60%);
+  transition: background 0.5s ease;
+}
+
+/* Custom interactive state */
+.peg-btn {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.peg-btn:hover {
+  transform: translateY(-1px) scale(1.05);
+}
+
+.peg-btn:active {
+  transform: scale(0.95);
 }
