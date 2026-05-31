@@ -27,9 +27,6 @@ export default function App() {
   const tunerColor = isInTune ? "text-green-400" :
     cents < 0 ? "text-red-400" : "text-orange-400";
 
-  const tunerLabel = isInTune ? "IN TUNE" :
-    cents < 0 ? "TOO LOW" : "TOO HIGH";
-
   return (
     <div className="min-h-screen bg-[#0c0c0e] text-white flex flex-col items-center px-6 py-10">
 
